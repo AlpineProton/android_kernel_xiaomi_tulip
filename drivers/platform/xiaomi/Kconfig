@@ -1,35 +1,53 @@
 # Xiaomi configuration options
 
- config MACH_XIAOMI
+config MACH_XIAOMI
 	bool "Xiaomi device"
 	depends on ARCH_QCOM
 	help
 	  Support for Xiaomi products
 
- config MACH_XIAOMI_SDM660
+config MACH_XIAOMI_SDM660
 	bool "Xiaomi SDM660"
 	depends on ARCH_QCOM
 	select MACH_XIAOMI
 	help
 	  Support for MSM8996 Xiaomi variants
 
- menu "Xiaomi board selection"
+config KERNEL_CUSTOM_E7T
+	def_bool n
+
+config KERNEL_CUSTOM_E7S
+	def_bool n
+
+config KERNEL_CUSTOM_D2S
+	def_bool n
+
+config KERNEL_CUSTOM_F7A
+	def_bool n
+
+config KERNEL_CUSTOM_FACTORY
+	def_bool n
+
+menu "Xiaomi board selection"
 
  	config MACH_XIAOMI_TULIP
 		bool "Xiaomi_tulip_board"
 		select MACH_XIAOMI_SDM660
+		select KERNEL_CUSTOM_E7T
 		help
 		  Support for Xiaomi Redmi Note 6 pro variant
 
  	config MACH_XIAOMI_WHYRED
 		bool "Xiaomi_whyred_board"
 		select MACH_XIAOMI_SDM660
+		select KERNEL_CUSTOM_E7S
 		help
 		  Support for Xiaomi Redmi Note 5 variant
 
  	config MACH_XIAOMI_WAYNE
 		bool "Xiaomi_wayne_board"
 		select MACH_XIAOMI_SDM660
+		select KERNEL_CUSTOM_D2S
 		help
 		  Support for Xiaomi MI 6X variant
 endmenu
