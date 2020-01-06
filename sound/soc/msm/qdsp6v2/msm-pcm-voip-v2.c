@@ -325,6 +325,15 @@ static void voip_ssr_cb_fn(uint32_t opcode, void *private_data)
 	/* Notify ASoC to send next playback/Capture to unblock write/read */
 	struct voip_drv_info *prtd = private_data;
 
+	if (prtd == NULL) {
+		pr_err("prtd is NULL\n");
+		return;
+	}
+
+	if ((prtd->playback_substream == NULL) ||
+		(prtd->capture_substream == NULL))
+		return;
+
 	if (opcode == 0xFFFFFFFF) {
 
 		prtd->voip_reset = true;
@@ -356,6 +365,11 @@ static void voip_process_ul_pkt(uint8_t *voc_pkt,
 	struct voip_buf_node *buf_node = NULL;
 	struct voip_drv_info *prtd = private_data;
 	unsigned long dsp_flags;
+
+	if (prtd == NULL) {
+		pr_err("prtd is NULL\n");
+		return;
+	}
 
 	if (prtd->capture_substream == NULL)
 		return;
@@ -519,6 +533,11 @@ static void voip_process_dl_pkt(uint8_t *voc_pkt, void *private_data)
 	uint32_t frame_rate;
 	u32 pkt_len;
 	u8 *voc_addr = NULL;
+
+	if (prtd == NULL) {
+		pr_err("prtd is NULL\n");
+		return;
+	}
 
 	if (prtd->playback_substream == NULL)
 		return;
@@ -714,8 +733,16 @@ static int msm_pcm_capture_prepare(struct snd_pcm_substream *substream)
 static int msm_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
 	int ret = 0;
-	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct voip_drv_info *prtd = runtime->private_data;
+	struct snd_pcm_runtime *runtime = NULL;
+	struct voip_drv_info *prtd = NULL;
+
+	if (substream == NULL) {
+		pr_err("substream is NULL\n");
+		return -EINVAL;
+	}
+
+	runtime = substream->runtime;
+	prtd = runtime->private_data;
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
@@ -743,9 +770,17 @@ static int msm_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 
 static int msm_pcm_open(struct snd_pcm_substream *substream)
 {
-	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct voip_drv_info *prtd = &voip_info;
+	struct snd_pcm_runtime *runtime = NULL;
+	struct voip_drv_info *prtd = NULL;
 	int ret = 0;
+
+	if (substream == NULL) {
+		pr_err("substream is NULL\n");
+		return -EINVAL;
+	}
+
+	runtime = substream->runtime;
+	prtd = &voip_info;
 
 	pr_debug("%s, VoIP\n", __func__);
 	mutex_lock(&prtd->lock);
@@ -949,14 +984,15 @@ static int msm_pcm_close(struct snd_pcm_substream *substream)
 	struct voip_buf_node *buf_node = NULL;
 	struct snd_dma_buffer *p_dma_buf, *c_dma_buf;
 	struct snd_pcm_substream *p_substream, *c_substream;
-	struct snd_pcm_runtime *runtime;
-	struct voip_drv_info *prtd;
+	struct snd_pcm_runtime *runtime = NULL;
+	struct voip_drv_info *prtd = NULL;
 	unsigned long dsp_flags;
 
 	if (substream == NULL) {
 		pr_err("substream is NULL\n");
 		return -EINVAL;
 	}
+
 	runtime = substream->runtime;
 	prtd = runtime->private_data;
 
@@ -1177,8 +1213,16 @@ done:
 static int msm_pcm_prepare(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
-	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct voip_drv_info *prtd = runtime->private_data;
+	struct snd_pcm_runtime *runtime = NULL;
+	struct voip_drv_info *prtd = NULL;
+
+	if (substream == NULL) {
+		pr_err("substream is NULL\n");
+		return -EINVAL;
+	}
+
+	runtime = substream->runtime;
+	prtd = runtime->private_data;
 
 	mutex_lock(&prtd->lock);
 
@@ -1269,10 +1313,18 @@ static int msm_pcm_mmap(struct snd_pcm_substream *substream,
 static int msm_pcm_hw_params(struct snd_pcm_substream *substream,
 				struct snd_pcm_hw_params *params)
 {
-	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct snd_dma_buffer *dma_buf = &substream->dma_buffer;
+	struct snd_pcm_runtime *runtime = NULL;
+	struct snd_dma_buffer *dma_buf = NULL;
 	struct voip_buf_node *buf_node = NULL;
 	int i = 0, offset = 0;
+
+	if (substream == NULL) {
+		pr_err("substream is NULL\n");
+		return -EINVAL;
+	}
+
+	runtime = substream->runtime;
+	dma_buf = &substream->dma_buffer;
 
 	pr_debug("%s: voip\n", __func__);
 
