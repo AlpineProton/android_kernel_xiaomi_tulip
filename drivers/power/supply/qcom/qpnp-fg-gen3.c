@@ -654,15 +654,15 @@ static int fg_get_battery_temp(struct fg_chip *chip, int *val)
 			BATT_INFO_BATT_TEMP_LSB(chip), rc);
 		return rc;
 	}
-		pr_err("addr=0x%04x,buf1=%04x buf0=%04x\n",
-			BATT_INFO_BATT_TEMP_LSB(chip),buf[1],buf[0]);
+
 	temp = ((buf[1] & BATT_TEMP_MSB_MASK) << 8) |
 		(buf[0] & BATT_TEMP_LSB_MASK);
 	temp = DIV_ROUND_CLOSEST(temp, 4);
 
 	/* Value is in Kelvin; Convert it to deciDegC */
 	temp = (temp - 273) * 10;
-		pr_err("LCT TEMP=%d\n",temp);
+
+	pr_debug("LCT TEMP=%d\n",temp);
 
 #if defined(CONFIG_KERNEL_CUSTOM_E7T)	
 	if (temp < -40){
@@ -714,12 +714,11 @@ static int fg_get_battery_temp(struct fg_chip *chip, int *val)
 	}
 
 #if defined(CONFIG_KERNEL_CUSTOM_E7T)
-	if(rradc_die == 1){
+	if (rradc_die == 1) {
 		quiet_them = thermal_zone_get_zone_by_name("quiet_therm");
 		if (quiet_them)
 			rc = thermal_zone_get_temp(quiet_them, &temp);
 		temp = (temp - 3) * 10;
-		pr_err("LCT USE QUIET_THERM AS BATTERY TEMP \n");
 	}
 #endif
 	*val = temp;
@@ -1126,25 +1125,23 @@ static int fg_get_batt_profile(struct fg_chip *chip)
 		chip->bp.float_volt_uv = -EINVAL;
 	}
 
-	if (hwc_check_global){
-		pr_err("sunxing get global set fastchg  2.3A");
+	if (hwc_check_global) {
 		chip->bp.fastchg_curr_ma = 2300;
-	}else{
-	rc = of_property_read_u32(profile_node, "qcom,fastchg-current-ma",
+	} else {
+		rc = of_property_read_u32(profile_node, "qcom,fastchg-current-ma",
 			&chip->bp.fastchg_curr_ma);
 #if defined(CONFIG_KERNEL_CUSTOM_E7T)
-	if (is_poweroff_charge == true)
-	{
-		if(hwc_check_india == 1)
-			chip->bp.fastchg_curr_ma = 2200;
-		else
-			chip->bp.fastchg_curr_ma = 2300;
-	}
+		if (is_poweroff_charge == true) {
+			if (hwc_check_india == 1)
+				chip->bp.fastchg_curr_ma = 2200;
+			else
+				chip->bp.fastchg_curr_ma = 2300;
+		}
 #endif
-	if (rc < 0) {
-		pr_err("battery fastchg current unavailable, rc:%d\n", rc);
-		chip->bp.fastchg_curr_ma = -EINVAL;
-	}
+		if (rc < 0) {
+			pr_err("battery fastchg current unavailable, rc:%d\n", rc);
+			chip->bp.fastchg_curr_ma = -EINVAL;
+		}
 	}
 	rc = of_property_read_u32(profile_node, "qcom,fg-cc-cv-threshold-mv",
 			&chip->bp.vbatt_full_mv);
@@ -2284,17 +2281,17 @@ static int fg_adjust_recharge_voltage(struct fg_chip *chip)
 	if (chip->health == POWER_SUPPLY_HEALTH_WARM)
 		recharge_volt_mv = 4050;
 	if (chip->health == POWER_SUPPLY_HEALTH_COOL)
-        recharge_volt_mv = 4282;
+        	recharge_volt_mv = 4282;
 #elif defined(CONFIG_KERNEL_CUSTOM_E7T)
-if (chip->health == POWER_SUPPLY_HEALTH_WARM)
-	recharge_volt_mv = 4050;
-if (chip->health == POWER_SUPPLY_HEALTH_COOL)
-	recharge_volt_mv = 4250;
+	if (chip->health == POWER_SUPPLY_HEALTH_WARM)
+		recharge_volt_mv = 4050;
+	if (chip->health == POWER_SUPPLY_HEALTH_COOL)
+		recharge_volt_mv = 4250;
 #else
 	if (chip->health == POWER_SUPPLY_HEALTH_WARM)
 		recharge_volt_mv = 4050;
 	 if (chip->health == POWER_SUPPLY_HEALTH_COOL)
-              recharge_volt_mv = 4280 ;
+		recharge_volt_mv = 4280 ;
 #endif
 
 	rc = fg_set_recharge_voltage(chip, recharge_volt_mv);
@@ -2895,14 +2892,14 @@ static void status_change_work(struct work_struct *work)
 	fg_cap_learning_update(chip);
 #if defined(CONFIG_KERNEL_CUSTOM_D2S) || defined(CONFIG_KERNEL_CUSTOM_F7A)
 	if (chip->charge_done && !chip->report_full) {
-					 chip->report_full = true;
-			 } else if (!chip->charge_done && chip->report_full) {
-					 rc = fg_get_msoc_raw(chip, &msoc);
-					 if (rc < 0)
-							 pr_err("Error in getting msoc, rc=%d\n", rc);
-					 if (msoc < FULL_SOC_REPORT_THR - 4)
-							 chip->report_full = false;
-			 }
+		chip->report_full = true;
+	} else if (!chip->charge_done && chip->report_full) {
+		rc = fg_get_msoc_raw(chip, &msoc);
+		if (rc < 0)
+			pr_err("Error in getting msoc, rc=%d\n", rc);
+		if (msoc < FULL_SOC_REPORT_THR - 4)
+			chip->report_full = false;
+	}
 #endif
 	rc = fg_charge_full_update(chip);
 	if (rc < 0)
@@ -4024,6 +4021,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 
 	return 0;
 }
+
 #if defined(CONFIG_KERNEL_CUSTOM_E7T)
 #define BCL_RESET_RETRY_COUNT 4
 static int fg_bcl_reset(struct fg_chip *chip)
@@ -4031,14 +4029,14 @@ static int fg_bcl_reset(struct fg_chip *chip)
 	int i, ret, rc = 0;
 	u8 val, peek_mux;
 	bool success = false;
-	pr_err("FG_BCL_RESET START\n");
+
 	/* Read initial value of peek mux1 */
 	rc = fg_read(chip, BATT_INFO_PEEK_MUX1(chip), &peek_mux, 1);
 	if (rc < 0) {
 		pr_err("Error in writing peek mux1, rc=%d\n", rc);
 		return rc;
 	}
-	pr_err("FG_BCL_RESET PEEK_MUX = %d\n",peek_mux);
+
 	val = 0x83;
 	rc = fg_write(chip, BATT_INFO_PEEK_MUX1(chip), &val, 1);
 	if (rc < 0) {
@@ -4048,7 +4046,6 @@ static int fg_bcl_reset(struct fg_chip *chip)
 
 	mutex_lock(&chip->sram_rw_lock);
 	for (i = 0; i < BCL_RESET_RETRY_COUNT; i++) {
-		pr_err("FG_BCL_RESET RETRY\n");
 		rc = fg_dma_mem_req(chip, true);
 		if (rc < 0) {
 			pr_err("Error in locking memory, rc=%d\n", rc);
@@ -4060,9 +4057,8 @@ static int fg_bcl_reset(struct fg_chip *chip)
 			pr_err("Error in reading rdback, rc=%d\n", rc);
 			goto release_mem;
 		}
-		pr_err("FG_BCL_RESET VAL = %d\n",val);
+
 		if (val & PEEK_MUX1_BIT) {
-			pr_err("FG_BCL_RESET DEBUG\n");
 			rc = fg_masked_write(chip, BATT_SOC_RST_CTRL0(chip),
 						BCL_RESET_BIT, BCL_RESET_BIT);
 			if (rc < 0) {
@@ -4855,14 +4851,12 @@ static irqreturn_t fg_delta_msoc_irq_handler(int irq, void *data)
 	rc = fg_get_battery_voltage(chip, &volt_uv);
 	if (!rc)
 		rc = fg_get_prop_capacity(chip, &msoc);
-
 	if (!rc)
 		rc = fg_get_battery_temp(chip, &batt_temp);
 	if (quiet_them)
 		rc = thermal_zone_get_temp(quiet_them, &temp_qt);
 	if (!rc)
 		rc = fg_get_battery_current(chip, &ibatt_now);
-
 	if (!rc)
 		pr_err("lct battery SOC:%d voltage:%duV current:%duA temp:%d id:%dK charge_status:%d charge_type:%d health:%d input_present:%d temp_qt:%d \n",
 			msoc, volt_uv, ibatt_now, batt_temp, chip->batt_id_ohms / 1000, chip->charge_status, chip->charge_type, chip->health, input_present,temp_qt);

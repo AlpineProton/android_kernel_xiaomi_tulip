@@ -64,11 +64,6 @@ extern bool is_poweroff_charge;
 
 #define SMB2_DEFAULT_WPWR_UW	8000000
 
-#ifdef CONFIG_CHARGER_RUNIN
-static int BatteryTestStatus_enable = 0;
-static bool charger_enable = true;
-void runin_work(struct smb_charger *chip,union power_supply_propval *value);
-#endif
 static struct smb_params v1_params = {
 	.fcc			= {
 		.name	= "fast charge current",
@@ -217,7 +212,7 @@ struct smb2 {
 	bool			bad_part;
 };
 
-static int __debug_mask = 0xFF;
+static int __debug_mask;
 module_param_named(
 	debug_mask, __debug_mask, int, S_IRUSR | S_IWUSR
 );
@@ -264,24 +259,23 @@ static int smb2_parse_dt(struct smb2 *chip)
 	chip->dt.no_battery = of_property_read_bool(node,
 						"qcom,batteryless-platform");
 
-	if (hwc_check_global){
-		pr_err("sunxing get global set fcc max 2.3A");
+	if (hwc_check_global) {
 		chg->batt_profile_fcc_ua = 2300000;
-	}else{
-	rc = of_property_read_u32(node,
+	} else {
+		rc = of_property_read_u32(node,
 				"qcom,fcc-max-ua", &chg->batt_profile_fcc_ua);
 #if defined(CONFIG_KERNEL_CUSTOM_E7T)
-	if(is_poweroff_charge == true)
-	{
-		if(hwc_check_india == 1)
-			chg->batt_profile_fcc_ua = 2200000;
-		else
-			chg->batt_profile_fcc_ua = 2300000;
-	}
+		if (is_poweroff_charge == true) {
+			if (hwc_check_india == 1)
+				chg->batt_profile_fcc_ua = 2200000;
+			else
+				chg->batt_profile_fcc_ua = 2300000;
+		}
 #endif
-	if (rc < 0)
-		chg->batt_profile_fcc_ua = -EINVAL;
+		if (rc < 0)
+			chg->batt_profile_fcc_ua = -EINVAL;
 	}
+
 	rc = of_property_read_u32(node,
 				"qcom,fv-max-uv", &chg->batt_profile_fv_uv);
 	if (rc < 0)
@@ -554,7 +548,7 @@ static int smb2_usb_get_prop(struct power_supply *psy,
 					      USB_PSY_VOTER);
 		break;
 	default:
-		pr_err("get prop %d is not supported in usb\n", psp);
+		pr_debug("get prop %d is not supported in usb\n", psp);
 		rc = -EINVAL;
 		break;
 	}
@@ -1067,12 +1061,6 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		rc = smblib_get_prop_batt_capacity(chg, val);
-		#ifdef XIAOMI_CHARGER_RUNIN
-		pr_err("lct battery_capacity =%d\n", val->intval);
-		#endif
-		#ifdef CONFIG_CHARGER_RUNIN
-		runin_work(chg,val);
-		#endif
 		break;
 	case POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL:
 		rc = smblib_get_prop_system_temp_level(chg, val);
@@ -2817,21 +2805,10 @@ static int smb2_remove(struct platform_device *pdev)
 	struct smb_charger *chg = &chip->chg;
 	#ifdef THERMAL_CONFIG_FB
 	unsigned char attr_count2;
-	#endif
-	
-	#ifdef CONFIG_CHARGER_RUNIN
-	unsigned char attr_count;
-			for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
-			    sysfs_remove_file(&chg->dev->kobj,
-							&attrs[attr_count].attr);
-			}
-	#endif
-	
-	#ifdef THERMAL_CONFIG_FB
-		for (attr_count2 = 0; attr_count2 < ARRAY_SIZE(attrs2); attr_count2++) {
-			  sysfs_remove_file(&chg->dev->kobj,
-							&attrs2[attr_count2].attr);
-			}
+
+	for (attr_count2 = 0; attr_count2 < ARRAY_SIZE(attrs2); attr_count2++) {
+		sysfs_remove_file(&chg->dev->kobj, &attrs2[attr_count2].attr);
+	}
 	lct_unregister_powermanger(chg);
 	#endif
 	power_supply_unregister(chg->batt_psy);

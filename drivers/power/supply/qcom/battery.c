@@ -89,7 +89,7 @@ enum print_reason {
 	PR_PARALLEL	= BIT(0),
 };
 
-static int debug_mask = 0xff;
+static int debug_mask;
 module_param_named(debug_mask, debug_mask, int, S_IRUSR | S_IWUSR);
 
 #define pl_dbg(chip, reason, fmt, ...)				\
@@ -889,10 +889,8 @@ static int usb_icl_vote_callback(struct votable *votable, void *data,
 	 *	unvote USBIN_I_VOTER) the status_changed_work enables
 	 *	USBIN_I_VOTER based on settled current.
 	 */
-	if (icl_ua <= 1300000){
-		pr_err("icl_ua <= 1300000 disable parallel charger smb1351 \n");
+	if (icl_ua <= 1300000)
 		vote(chip->pl_enable_votable_indirect, USBIN_I_VOTER, false, 0);
-	}
 	else
 		schedule_delayed_work(&chip->status_change_work,
 						msecs_to_jiffies(PL_DELAY_MS));
@@ -1151,11 +1149,10 @@ static void handle_main_charge_type(struct pl_data *chip)
 		pr_err("Couldn't get batt charge type rc=%d\n", rc);
 		return;
 	}
-	pr_err("chip->charge_type =%d, pval.intval=%d \n", chip->charge_type,pval.intval);
+
 	/* not fast/not taper state to disables parallel */
 	if ((pval.intval != POWER_SUPPLY_CHARGE_TYPE_FAST)
 		&& (pval.intval != POWER_SUPPLY_CHARGE_TYPE_TAPER)) {
-		pr_err("main charge CHG_STATE_VOTER disable parllerl charging smb1351\n");
 		vote(chip->pl_disable_votable, CHG_STATE_VOTER, true, 0);
 		chip->taper_pct = 100;
 		vote(chip->pl_disable_votable, TAPER_END_VOTER, false, 0);
@@ -1234,12 +1231,11 @@ static void handle_settled_icl_change(struct pl_data *chip)
 			return;
 		}
 		battery_temp = lct_pval.intval;
-		pr_err("main_limited=%d, main_settled_ua=%d, chip->pl_settled_ua=%d ,total_current_ua=%d , battery_temp=%d\n", main_limited, main_settled_ua, chip->pl_settled_ua, total_current_ua, battery_temp);
+
 		if ((main_limited && (main_settled_ua + chip->pl_settled_ua) < 1300000)
 				|| (main_settled_ua == 0)
 				|| ((total_current_ua >= 0) &&
-					(total_current_ua <= 1300000))){ 
-			pr_err("total_current_ua <= 1300000 disable parallel charger smb1351 \n");
+					(total_current_ua <= 1300000))) {
 			vote(chip->pl_enable_votable_indirect, USBIN_I_VOTER, false, 0);
 			vote(chip->pl_disable_votable, PL_TEMP_VOTER, true, 0);
 		}
@@ -1255,24 +1251,20 @@ static void handle_settled_icl_change(struct pl_data *chip)
 		}
 	}
 	else {
-		pr_err("main_limited=%d, main_settled_ua=%d, chip->pl_settled_ua=%d ,total_current_ua=%d\n", main_limited, main_settled_ua, chip->pl_settled_ua, total_current_ua);
 		if ((main_limited && (main_settled_ua + chip->pl_settled_ua) < 1300000)
 				|| (main_settled_ua == 0)
 				|| ((total_current_ua >= 0) &&
-					(total_current_ua <= 1300000))){
-			pr_err("total_current_ua <= 1300000 disable parallel charger smb1351 \n");
+					(total_current_ua <= 1300000))) {
 			vote(chip->pl_enable_votable_indirect, USBIN_I_VOTER, false, 0);
 		}
 		else
 			vote(chip->pl_enable_votable_indirect, USBIN_I_VOTER, true, 0);
 	}
 #else
-	pr_err("main_limited=%d, main_settled_ua=%d, chip->pl_settled_ua=%d ,total_current_ua=%d\n", main_limited, main_settled_ua, chip->pl_settled_ua, total_current_ua);
 	if ((main_limited && (main_settled_ua + chip->pl_settled_ua) < 1300000)
 			|| (main_settled_ua == 0)
 			|| ((total_current_ua >= 0) &&
-				(total_current_ua <= 1300000))){
-		pr_err("total_current_ua <= 1300000 disable parallel charger smb1351 \n");
+				(total_current_ua <= 1300000))) {
 		vote(chip->pl_enable_votable_indirect, USBIN_I_VOTER, false, 0);
 	}
 	else
@@ -1327,7 +1319,6 @@ static void handle_parallel_in_taper(struct pl_data *chip)
 	 * we disable parallel charger
 	 */
 	if (pval.intval == POWER_SUPPLY_CHARGE_TYPE_TAPER) {
-		pr_err("parallel disabled  when smb1351 is taper charge\n");
 		vote(chip->pl_disable_votable, PL_TAPER_EARLY_BAD_VOTER,
 				true, 0);
 		return;
