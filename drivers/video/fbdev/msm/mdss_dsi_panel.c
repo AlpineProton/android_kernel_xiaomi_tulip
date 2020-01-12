@@ -996,8 +996,7 @@ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
 	 * for the backlight brightness. If the brightness is less
 	 * than it, the controller can malfunction.
 	 */
-
-	pr_notice("%s: bl_level:%d\n", __func__, bl_level);
+	pr_debug("%s: bl_level:%d\n", __func__, bl_level);
 
 	/* do not allow backlight to change when panel in disable mode */
 	if (pdata->panel_disable_mode && (bl_level != 0))
